@@ -3,10 +3,11 @@ BEGIN;
 
 TRUNCATE ticket_types, events RESTART IDENTITY CASCADE;
 
-INSERT INTO events (name, venue, starts_at) VALUES
-  ('Rock Night 2026',  'Sân vận động Mỹ Đình, Hà Nội',     '2026-12-20 19:00+07'),
-  ('Acoustic Chill',   'Nhà hát Hòa Bình, TP.HCM',         '2026-12-27 20:00+07'),
-  ('Tech Conf Hà Nội', 'Trung tâm Hội nghị Quốc gia',      '2027-01-10 08:00+07');
+-- 2 sự kiện đang mở bán + 1 sự kiện nháp (để kiểm tra API không lộ sự kiện nháp)
+INSERT INTO events (name, venue, starts_at, status) VALUES
+  ('Rock Night 2026',  'Sân vận động Mỹ Đình, Hà Nội',     '2026-12-20 19:00+07', 'on_sale'),
+  ('Acoustic Chill',   'Nhà hát Hòa Bình, TP.HCM',         '2026-12-27 20:00+07', 'on_sale'),
+  ('Tech Conf Hà Nội', 'Trung tâm Hội nghị Quốc gia',      '2027-01-10 08:00+07', 'draft');
 
 -- 4 loại vé cho mỗi sự kiện; price để NULL, ban tổ chức sẽ nhập sau
 INSERT INTO ticket_types (event_id, name, total_qty)
