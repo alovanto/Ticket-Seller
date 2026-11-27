@@ -42,7 +42,9 @@ export const eventRoutes: FastifyPluginAsync = async (app) => {
       schema: {
         params: {
           type: "object",
-          properties: { id: { type: "integer", minimum: 1 } },
+          // maximum = Number.MAX_SAFE_INTEGER: số lớn hơn JS không giữ chính xác được
+          // và có thể vượt BIGINT của Postgres -> chặn ngay ở cửa (400), không để chạm DB
+          properties: { id: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER } },
           required: ["id"],
         },
       },

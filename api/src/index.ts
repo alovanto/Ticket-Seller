@@ -6,9 +6,24 @@ import { eventRoutes } from "./routes/events.ts";
 // logger: true -> in log mỗi request (method, url, status, thời gian)
 const app = Fastify({ logger: true });
 
-// Route kiểm tra server còn sống không
+// LIVENESS — "tiến trình Node còn chạy không?"
+// Cố tình KHÔNG kiểm tra DB: nếu DB sập mà /health báo lỗi, hệ thống giám sát
+// sẽ restart API liên tục, nhưng restart API không chữa được DB.
 app.get("/health", async () => {
   return { status: "ok", uptime: process.uptime() };
+});
+
+// READINESS — "có phục vụ khách được không?" (cần DB trả lời được)
+// Lỗi -> 503: báo tạm ngừng gửi khách vào, KHÔNG phải restart.
+app.get("/ready", async (request, reply) => {
+  try {
+    await pool.query("SELECT 1");
+    return { status: "ready", db: "ok" };
+  } catch (err) {
+    // Chi tiết lỗi chỉ ghi log, không trả cho client
+    request.log.warn({ err }, "Readiness: database không phản hồi");
+    return reply.code(503).send({ status: "not_ready", db: "down" });
+  }
 });
 
 // ---------------------------------------------------------------------------

@@ -9,15 +9,20 @@ INSERT INTO events (name, venue, starts_at, status) VALUES
   ('Acoustic Chill',   'Nhà hát Hòa Bình, TP.HCM',         '2026-12-27 20:00+07', 'on_sale'),
   ('Tech Conf Hà Nội', 'Trung tâm Hội nghị Quốc gia',      '2027-01-10 08:00+07', 'draft');
 
--- 4 loại vé cho mỗi sự kiện; price để NULL, ban tổ chức sẽ nhập sau
-INSERT INTO ticket_types (event_id, name, total_qty)
-SELECT e.id, t.name, t.qty
+-- 4 loại vé cho mỗi sự kiện.
+-- Quy tắc: sự kiện đang mở bán (on_sale) thì MỌI loại vé phải có giá.
+-- Sự kiện nháp (draft) để price = NULL: ban tổ chức chưa nhập giá.
+INSERT INTO ticket_types (event_id, name, price, total_qty)
+SELECT e.id,
+       t.name,
+       CASE WHEN e.status = 'on_sale' THEN t.price END,  -- draft -> NULL
+       t.qty
 FROM events e
 CROSS JOIN (VALUES
-  ('Premium',   20),
-  ('Gold',      50),
-  ('Silver',   100),
-  ('Standard', 200)
-) AS t(name, qty);
+  ('Premium',  2000000,  20),
+  ('Gold',     1000000,  50),
+  ('Silver',    500000, 100),
+  ('Standard',  300000, 200)
+) AS t(name, price, qty);
 
 COMMIT;
