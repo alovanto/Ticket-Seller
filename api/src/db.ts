@@ -24,21 +24,30 @@ pg.types.setTypeParser(pg.types.builtins.NUMERIC, toSafeNumber);
 // ---------------------------------------------------------------------------
 // Pool: giữ sẵn một nhóm kết nối, các request mượn rồi trả lại.
 // ---------------------------------------------------------------------------
-export const pool = new pg.Pool({
-  ...config.db,
-  max: 10, // tối đa 10 kết nối cùng lúc; request thứ 11 phải xếp hàng chờ
-  idleTimeoutMillis: 30_000, // kết nối rảnh quá 30s thì đóng bớt
-  connectionTimeoutMillis: 5_000, // chờ mượn kết nối quá 5s thì báo lỗi, không treo mãi
-});
+export function createPool(connection: pg.PoolConfig): pg.Pool {
+  const p = new pg.Pool({
+    ...connection,
+    max: 10, // tối đa 10 kết nối cùng lúc; request thứ 11 phải xếp hàng chờ
+    idleTimeoutMillis: 30_000, // kết nối rảnh quá 30s thì đóng bớt
+    connectionTimeoutMillis: 5_000, // chờ mượn kết nối quá 5s thì báo lỗi, không treo mãi
+  });
 
-// Một kết nối đang rảnh trong pool bị lỗi (vd: Postgres khởi động lại).
-// Không bắt sự kiện này thì cả tiến trình Node sẽ bị sập.
-pool.on("error", (err) => {
-  console.error("Lỗi trên kết nối rảnh trong pool:", err.message);
-});
+  // Một kết nối đang rảnh trong pool bị lỗi (vd: Postgres khởi động lại).
+  // Không bắt sự kiện này thì cả tiến trình Node sẽ bị sập.
+  p.on("error", (err) => {
+    console.error("Lỗi trên kết nối rảnh trong pool:", err.message);
+  });
+  return p;
+}
+
+// Pool của API — đăng nhập bằng user "app" (quyền tối thiểu)
+export const pool = createPool(config.db);
 
 // Gọi lúc khởi động: thử một câu SQL đơn giản để chắc chắn kết nối được.
 export async function checkDbConnection(): Promise<void> {
-  const { rows } = await pool.query<{ version: string }>("SELECT version()");
-  console.log("Đã kết nối Postgres:", rows[0]?.version.split(" on ")[0]);
+  const { rows } = await pool.query<{ version: string; user: string }>(
+    "SELECT version() AS version, current_user AS user",
+  );
+  const row = rows[0];
+  console.log(`Đã kết nối Postgres (user: ${row?.user}):`, row?.version.split(" on ")[0]);
 }

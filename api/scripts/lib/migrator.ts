@@ -54,6 +54,15 @@ async function loadMigrationFiles(): Promise<MigrationFile[]> {
   );
 }
 
+// Đặt (hoặc đổi) mật khẩu cho user "app" từ .env và cho phép đăng nhập.
+// Chạy mỗi lần migrate -> muốn đổi mật khẩu app: sửa APP_DB_PASSWORD rồi chạy db:migrate.
+// ALTER ROLE không nhận tham số $1, nên dùng escapeLiteral để bọc mật khẩu an toàn.
+export async function syncAppRolePassword(client: PoolClient, role: string, password: string) {
+  await client.query(
+    `ALTER ROLE ${client.escapeIdentifier(role)} WITH LOGIN PASSWORD ${client.escapeLiteral(password)}`,
+  );
+}
+
 export async function migrate(client: PoolClient, log: (msg: string) => void = console.log) {
   await client.query("SELECT pg_advisory_lock($1)", [LOCK_KEY]);
   try {
